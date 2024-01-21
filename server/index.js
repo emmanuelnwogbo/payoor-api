@@ -21,10 +21,10 @@ const app = express();
 
 const corsOptions = {
     origin: [
-        'https://www.payoor.shop',
-        'https://main--musical-gingersnap-001e99.netlify.app',
-        'http://localhost:3000',
-        'https://admin.payoor.shop'
+        'https://www.payoor.shop', 
+        'https://main--musical-gingersnap-001e99.netlify.app', 
+        'https://admin.payoor.shop', 
+        'http://localhost:3000'
     ],
     optionsSuccessStatus: 200,
 };
