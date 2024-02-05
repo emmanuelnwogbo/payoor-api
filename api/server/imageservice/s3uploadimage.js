@@ -20,7 +20,7 @@ const s3uploadimage = async (file) => {
 
         const data = await s3bucket.upload(params).promise();
 
-        console.log(data);
+        //console.log(data);
 
         return data.Location;
     } catch (error) {

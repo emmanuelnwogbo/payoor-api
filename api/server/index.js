@@ -2,7 +2,7 @@ if (process.env.NODE_ENV !== 'production') {
     require("dotenv").config();
 }
 
-import "regenerator-runtime/runtime.js";
+import "regenerator-runtime";
 import express from "express";
 import http from "http";
 import bodyParser from 'body-parser';

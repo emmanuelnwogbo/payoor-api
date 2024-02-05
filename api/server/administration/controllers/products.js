@@ -11,20 +11,6 @@ const products = express();
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
-const productsarr = [
-    {
-        _id: "1",
-        itemname: "Delicious Pasta",
-        description: "Homemade pasta with a rich tomato sauce and fresh basil.",
-        price: 29.99,
-        category: "Italian Cuisine",
-        stockQuantity: 4,
-        imageUrl:
-            "https://res.cloudinary.com/dqmgqhman/image/upload/c_thumb,w_200,g_face/v1705287086/photo-1692958211324-147c95a9878b_bjqhh0.avif",
-        bestseller: true,
-    },
-]
-
 products.get('/products/inventory/', async (req, res) => {
     try {
         const productslist = await Product.find();
@@ -41,15 +27,10 @@ products.get('/products/inventory/', async (req, res) => {
 
 products.post('/product/inventory/create', async (req, res) => {
     try {
-        const productWithSameName = await Product.findOne({ itemname: req.body.itemname });
-
-        if (productWithSameName) {
-            return res.status(409).send({ message: 'A product with the same name already exists.' });
-        }
-
         const { itemname, description, price, category, stockQuantity, imageUrl, bestseller } = req.body;
 
         const productItem = new Product({ itemname, description, price, category, stockQuantity, imageUrl, bestseller });
+        productItem.itemname = `item payoor_id ${productItem._id}`
 
         const savedProduct = await productItem.save();
 
@@ -95,7 +76,6 @@ products.post('/product/inventory/imageupload', upload.single('file'), async (re
         const file = req.file;
 
         const imageUrl = await s3uploadimage(file);
-
         const productToUpdate = await Product.findByIdAndUpdate(productid, { imageUrl }, {
             new: true,
             runValidators: true
@@ -108,8 +88,23 @@ products.post('/product/inventory/imageupload', upload.single('file'), async (re
 
         res.status(200).send({ item: productToUpdate });
     } catch (error) {
-        console.error('Internal Server Error:', error);
+        res.status(500).send({ message: 'Internal Server Error', error: error.message });
+    }
+});
 
+products.delete('/product/inventory/delete', async (req, res) => {
+    try {
+        const { productid } = req.query;
+
+        const deletedDoc = await Product.findOneAndDelete({ _id: productid });
+
+        if (deletedDoc) {
+            res.status(200).send({ message: 'Item deleted successfully' });
+        } else {
+            res.status(404).send({ message: 'Item not found' });
+        }
+    } catch (error) {
+        console.log(error);
         res.status(500).send({ message: 'Internal Server Error', error: error.message });
     }
 })
