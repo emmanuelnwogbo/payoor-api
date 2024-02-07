@@ -24,7 +24,8 @@ const corsOptions = {
         'https://www.payoor.shop', 
         'https://main--musical-gingersnap-001e99.netlify.app', 
         'https://admin.payoor.shop', 
-        'http://localhost:3000'
+        'http://localhost:3000',
+        'https://musical-gingersnap-001e99.netlify.app'
     ],
     optionsSuccessStatus: 200,
 };

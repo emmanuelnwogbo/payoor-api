@@ -1,7 +1,7 @@
 "use strict";
 
 function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
-require("regenerator-runtime/runtime.js");
+require("regenerator-runtime");
 var _express = _interopRequireDefault(require("express"));
 var _http = _interopRequireDefault(require("http"));
 var _bodyParser = _interopRequireDefault(require("body-parser"));
@@ -20,7 +20,7 @@ if (process.env.NODE_ENV !== 'production') {
 }
 var app = (0, _express["default"])();
 var corsOptions = {
-  origin: ['https://www.payoor.shop', 'https://main--musical-gingersnap-001e99.netlify.app', 'https://admin.payoor.shop', 'http://localhost:3000'],
+  origin: ['https://www.payoor.shop', 'https://main--musical-gingersnap-001e99.netlify.app', 'https://admin.payoor.shop', 'http://localhost:3000', 'https://musical-gingersnap-001e99.netlify.app'],
   optionsSuccessStatus: 200
 };
 app.use((0, _cors["default"])(corsOptions));
