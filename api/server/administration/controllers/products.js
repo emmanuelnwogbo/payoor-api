@@ -1,10 +1,12 @@
 import express from 'express';
 import multer from 'multer';
 
-
 import Product from '../../models/product';
+import RecipeStep from '../../models/recipestep';
 
 import s3uploadimage from '../../imageservice/s3uploadimage';
+
+import getStringFromObjectId from '../../utilities/getStringFromObjectId';
 
 const products = express();
 
@@ -13,7 +15,15 @@ const upload = multer({ storage: storage });
 
 products.get('/products/inventory/', async (req, res) => {
     try {
-        const productslist = await Product.find();
+        const { category } = req.query;
+
+        let productslist;
+
+        if (category && category !== 'all') {
+            productslist = await Product.find({ category });
+        } else {
+            productslist = await Product.find();
+        }
 
         res.status(200).send({
             items: [...productslist]
@@ -107,6 +117,191 @@ products.delete('/product/inventory/delete', async (req, res) => {
         console.log(error);
         res.status(500).send({ message: 'Internal Server Error', error: error.message });
     }
-})
+});
+
+products.post('/product/inventory/addingredient', async (req, res) => {
+    try {
+        const { ingredient, recipe } = req.query;
+
+        const recipeitem = await Product.findOne({ _id: recipe });
+        const ingredientitem = await Product.findOne({ _id: ingredient });
+        const ingredients = [...recipeitem.ingredients, getStringFromObjectId(ingredientitem._id)];
+
+        const productToUpdate = await Product.findByIdAndUpdate(recipeitem._id, { ingredients }, {
+            new: true,
+            runValidators: true
+        });
+
+        if (!productToUpdate) {
+            res.status(404).send({ message: 'No product found with the given ID' });
+            return;
+        }
+
+        res.status(200).send({ item: productToUpdate });
+    } catch (error) {
+        res.status(500).send({ message: 'Internal Server Error', error: error.message });
+    }
+});
+
+products.post('/product/inventory/removeingredient', async (req, res) => {
+    try {
+        const { ingredient, recipe } = req.query;
+
+        const recipeitem = await Product.findOne({ _id: recipe });
+        const ingredientitem = await Product.findOne({ _id: ingredient });
+        const ingredients = recipeitem.ingredients.filter(ingritem => ingritem !== getStringFromObjectId(ingredientitem._id));
+
+        const productToUpdate = await Product.findByIdAndUpdate(recipeitem._id, { ingredients }, {
+            new: true,
+            runValidators: true
+        });
+
+        if (!productToUpdate) {
+            res.status(404).send({ message: 'No product found with the given ID' });
+            return;
+        }
+
+        res.status(200).send({ item: productToUpdate });
+    } catch (error) {
+        res.status(500).send({ message: 'Internal Server Error', error: error.message });
+    }
+});
+
+products.get('/product/inventory/ingredients', async (req, res) => {
+    try {
+        const { recipe } = req.query;
+
+        const recipeitem = await Product.findOne({ _id: recipe });
+        const ingredients = recipeitem.ingredients;
+        const items = []
+
+        for (const ingredient of ingredients) {
+            const product = await Product.findOne({ _id: ingredient });
+            if (product) {
+                items.push(product);
+            }
+        }
+
+        res.status(200).send({ item: items, ingredientsids: ingredients });
+    } catch (error) {
+        res.status(500).send({ message: 'Internal Server Error', error: error.message });
+    }
+});
+
+products.post('/product/inventory/create/ingredientstep', async (req, res) => {
+    try {
+        const { recipe } = req.query;
+
+        const recipeitem = await Product.findOne({ _id: recipe });
+
+        if (recipeitem) {
+            const recipestep = new RecipeStep({
+                recipe
+            });
+
+            const recipestepdoc = await recipestep.save();
+            const steps = [...recipeitem.steps, recipestepdoc._id.toString()];
+
+            const productToUpdate = await Product.findByIdAndUpdate(recipeitem._id, { steps }, {
+                new: true,
+                runValidators: true
+            });
+
+            if (!productToUpdate) {
+                res.status(404).send({ message: 'Failed to update the product' });
+                return;
+            }
+
+            res.status(200).send({ item: productToUpdate });
+        }
+    } catch (error) {
+        res.status(500).send({ message: 'Internal Server Error', error: error.message });
+    }
+});
+
+products.get('/product/inventory/get/ingredientsteps', async (req, res) => {
+    try {
+        const { recipe } = req.query;
+
+        const recipeitem = await Product.findOne({ _id: recipe });
+
+        if (recipeitem) {
+
+            const recipesteps = await RecipeStep.find({ recipe });
+
+            res.status(200).send({ item: recipesteps });
+        }
+    } catch (error) {
+        res.status(500).send({ message: 'Internal Server Error', error: error.message });
+    }
+});
+
+products.delete('/product/inventory/delete/ingredientstep', async (req, res) => {
+    try {
+        const { recipestep, recipe } = req.query;
+
+        const recipestepitem = await RecipeStep.findOne({ _id: recipestep });
+        const recipeitem = await Product.findOne({ _id: recipe });
+        let steps = recipeitem.steps;
+        steps = steps.filter(step => step !== recipestepitem._id.toString())
+
+        recipeitem.steps = steps;
+        await recipeitem.save();
+        const result = await RecipeStep.deleteOne({ _id: recipestep });
+
+        if (result.deletedCount === 0) {
+            res.status(500).send({ message: 'Internal Server Error', error: error.message });
+        } else {
+            res.status(200).send({ message: 'item deleted' });
+        }
+    } catch (error) {
+        res.status(500).send({ message: 'Internal Server Error', error: error.message });
+    }
+});
+
+products.put('/product/inventory/update/ingredientstep', async (req, res) => {
+    try {
+        const { recipestep } = req.query;
+
+        const recipeStepToUpdate = await RecipeStep.findByIdAndUpdate(recipestep, { ...req.body }, {
+            new: true,
+            runValidators: true
+        });
+
+        if (!recipeStepToUpdate) {
+            res.status(404).send({ message: 'Failed to update the recipe step' });
+            return;
+        }
+
+        res.status(200).send({ item: recipeStepToUpdate });
+    } catch (error) {
+        res.status(500).send({ message: 'Internal Server Error', error: error.message });
+    }
+});
+
+products.post('/product/inventory/imageupload/ingredientstep', upload.single('file'), async (req, res) => {
+    try {
+        const { recipestep } = req.query;
+        const file = req.file;
+
+        const imageUrl = await s3uploadimage(file);
+
+        const recipeStepToUpdate = await RecipeStep.findByIdAndUpdate(recipestep, { imageUrl }, {
+            new: true,
+            runValidators: true
+        });
+
+        if (!recipeStepToUpdate) {
+            res.status(404).send({ message: 'No recipe step found with the given ID' });
+            return;
+        }
+
+        res.status(201).send({ item: recipeStepToUpdate });
+    } catch (error) {
+        res.status(500).send({ message: 'Internal Server Error', error: error.message });
+    }
+});
+
+//const result = await RecipeStep.deleteMany({});
 
 export default products;

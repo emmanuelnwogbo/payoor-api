@@ -24,6 +24,18 @@ const productSchema = new Schema({
         type: Boolean,
         default: false
     },
+    tags: {
+        type: Array,
+        default: []
+    },
+    ingredients: {
+        type: Array,
+        default: []
+    },
+    steps: {
+        type: Array,
+        default: []
+    },
     createdAt: {
         type: Date,
         default: Date.now,
